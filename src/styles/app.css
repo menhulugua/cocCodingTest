@@ -1,4 +1,36 @@
-span {
-  color: blue;
-  font-size: 20px;
+html {
+  font-family: 'arial';
+}
+
+.errorMessage {
+  color: red;
+  padding-left: 20px;
+}
+
+.isRequired {
+  color: red;
+  padding-left: 5px;
+}
+
+label {
+  display: inline-block;
+  width: 150px;
+}
+
+.formRow {
+  margin-bottom: 10px;
+}
+
+button, input[type="submit"] {
+  border: 2px solid black;
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 18px;
+  margin-right: 20px;
+  padding: 10px 20px;
+}
+
+button.current {
+  background: black;
+  color: white;
 }

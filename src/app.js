@@ -3,24 +3,84 @@ import './styles/app.css';
 import { bmiReferenceProps, headCircumferenceReferenceProps } from './data.js';
 
 class App extends React.Component {
-  state = { fields: [], formName: ''};
+  state = { fields: [], formName: '', type: 1, error: ''}; // type 1 for BMI, 2 for head
 
   handleSubmit = event => {
     event.preventDefault();
 
-    let output = {};
-    this.state.fields.forEach(field => {
-      output[field.id] = field.value;
-    });
-    console.log(output);
+    // check if ready to submit
+    let requiredFields = this.state.fields.filter(field => field.isRequired);
+    let errorField = requiredFields.filter(field => field.error);
+    let emptyField = requiredFields.filter(field => !field.value);
+    if (errorField.length) {
+      this.setState({error: 'There are validation errors'});
+    } else if (emptyField.length) {
+      this.setState({error: 'There are not completed fields'});
+    } else {
+      this.setState({error: ''});
+      let output = {};
+      this.state.fields.forEach(field => {
+        output[field.id] = field.value;
+      });
+      console.log(output);
+    }
   }
 
+  // set field value, check for errors and calculate BMI
   onFieldChange(id, event) {
     let fields = [...this.state.fields];
+    let bmiField  = null;
+    let heightField = null;
+    let weightField = null;
     fields.forEach(field => {
-      if (field.id === id)
+      if (field.id === id) {
         field.value = event.target.value;
+        if (id === 'name') {
+          let name = field.value.split(' ');
+          if (name.length == 2 && name[0] && name[1])
+            field.error = '';
+          else
+            field.error = 'Name should be first and last name separated by a space';
+        } else if (field.type === 'numberInput') {
+          if (isNaN(field.value))
+            field.error = 'Must be a number';
+          else {
+            field.error = '';
+            if (field.bounds) {
+              if (field.bounds.upperLimit && field.value > field.bounds.upperLimit)
+                field.error = `must be a number below ${field.bounds.upperLimit}`;
+              if (field.value <= 0)
+                field.error = 'must be a number above 0';
+            }
+          }
+        }
+      }
+
+      if ((field.type === 'numberInput' || field.type === 'select') && field.value)
+        field.value = Number(field.value);
+
+      if (field.id === 'height')
+        heightField = field;
+      if (field.id === 'weight')
+        weightField = field;
+      if (field.id === 'bmi') {
+        bmiField = field;
+      }
     });
+
+    if (this.state.type === 1) {
+      if (!heightField.error && !weightField.error && heightField.value && weightField.value) {
+        bmiField.value = Number((weightField.value / (heightField.value / 100) ** 2).toFixed(2));
+        bmiField.error = '';
+        if (bmiField.value > bmiField.bounds.upperLimit)
+          bmiField.error = `must be a number below ${bmiField.bounds.upperLimit}`;
+        if (bmiField.value <= 0)
+          bmiField.error = 'must be a number above 0';
+      }
+      else
+        bmiField.value = '';
+    }
+
     this.setState({fields});
   }
 
@@ -28,7 +88,7 @@ class App extends React.Component {
     let fields = this.state.fields;
     if (fields.length) {
       return fields.map(field => {
-        let label = <label key={`${field.id}-label`} htmlFor={field.name}>{field.displayName}</label>;
+        let label = <label key={`${field.id}-label`} htmlFor={field.name}>{field.displayName}{field.unitOfMeasure? `(${field.unitOfMeasure})` : ''}</label>;
         if (field.display) {
           switch(field.type) {
             case 'textInput':
@@ -37,6 +97,8 @@ class App extends React.Component {
                <div className="formRow" key={`${field.id}`}>
                  {label}
                  <input type="text" name={field.id} value={field.value} onChange={() => this.onFieldChange(field.id, event)} />
+                 {field.isRequired && <span className="isRequired">*</span>}
+                 {field.error && <span className="errorMessage">{field.error}</span>}
                </div>
              );
              break;
@@ -53,12 +115,17 @@ class App extends React.Component {
               defaultValue = defaultValue[0].id;
              else
               defaultValue = field.options[0].id;
+
+            if (!field.value)
+              field.value = defaultValue;
+
               return (
                <div className="formRow" key={`${field.id}`}>
                  {label}
-                 <select name={field.id} value={field.value? field.value : defaultValue} onChange={() => this.onFieldChange(field.id, event)}>
+                 <select name={field.id} value={field.value} onChange={() => this.onFieldChange(field.id, event)}>
                    {options}
                  </select>
+                 {field.isRequired && <span className="isRequired">*</span>}
                </div>
              );
              break;
@@ -74,6 +141,8 @@ class App extends React.Component {
             <div className="formRow" key={`${field.id}`}>
               {label}
               <span>{field.value}</span>
+              {field.isRequired && <span className="isRequired">*</span>}
+              {field.error && <span className="errorMessage">{field.error}</span>}
              </div>
           );
         }
@@ -96,10 +165,11 @@ class App extends React.Component {
 
     // fetch useful data
     let fields = [];
+    let formName = data.observationName;
     data.dataElements.forEach(element => {
       fields.push({...element, value: '', error: ''});
     });
-    this.setState({fields: fields});
+    this.setState({fields, formName});
   }
 
   componentDidMount() {
@@ -108,17 +178,18 @@ class App extends React.Component {
 
   changeType(type) {
     this.setFields(type);
+    this.setState({type});
   }
 
   render() {
     return (
       <div>
-        <button onClick={() => this.changeType(1)}>BMI Form</button>
-        <button onClick={() => this.changeType(2)}>Head Circumference Form</button>
+        <button className={this.state.type == 1? 'current' : ''} onClick={() => this.changeType(1)}>BMI Form</button>
+        <button className={this.state.type == 2? 'current' : ''}  onClick={() => this.changeType(2)}>Head Circumference Form</button>
         <p>{this.state.formName}</p>
         <form onSubmit={this.handleSubmit}>
           {this.renderFields()}
-          <input type="submit" value="Submit" />
+          <input type="submit" value="Submit" /><span className="errorMessage">{this.state.error}</span>
         </form>
       </div>
     );
