@@ -178,7 +178,7 @@ class App extends React.Component {
 
   changeType(type) {
     this.setFields(type);
-    this.setState({type});
+    this.setState({type: type, error: ''});
   }
 
   render() {
