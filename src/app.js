@@ -56,7 +56,7 @@ class App extends React.Component {
         }
       }
 
-      if ((field.type === 'numberInput' || field.type === 'select') && field.value)
+      if ((field.type === 'numberInput' || field.type === 'select') && !field.error && field.value)
         field.value = Number(field.value);
 
       if (field.id === 'height')
