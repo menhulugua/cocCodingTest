@@ -103,38 +103,49 @@ class App extends React.Component {
              );
              break;
            case 'select':
-             let options = field.options.map(option => {
+             if (field.options && Array.isArray(field.options)) {
+               let options = field.options.map(option => {
+                  return (
+                    <option key={`${field.name}-${option.id}`} value={option.id}>{option.name}</option>
+                  );
+               });
+               let defaultValue = field.options.filter(option => {
+                 return option.isDefault;
+               });
+               if (defaultValue.length === 1)
+                defaultValue = defaultValue[0].id;
+               else
+                defaultValue = field.options[0].id;
+
+              if (!field.value)
+                field.value = defaultValue;
+
                 return (
-                  <option key={`${field.name}-${option.id}`} value={option.id}>{option.name}</option>
-                );
-             });
-             let defaultValue = field.options.filter(option => {
-               return option.isDefault;
-             });
-             if (defaultValue.length === 1)
-              defaultValue = defaultValue[0].id;
-             else
-              defaultValue = field.options[0].id;
+                 <div className="formRow" key={`${field.id}`}>
+                   {label}
+                   <select name={field.id} value={field.value} onChange={() => this.onFieldChange(field.id, event)}>
+                     {options}
+                   </select>
+                   {field.isRequired && <span className="isRequired">*</span>}
+                 </div>
+               );
+             } else {
+               return (
+                 <div className="formRow" key={`${field.id}`}>
+                   {label}
+                   <span>Can't render this field, missing option data</span>
+                  </div>
+               );
+             }
 
-            if (!field.value)
-              field.value = defaultValue;
-
-              return (
-               <div className="formRow" key={`${field.id}`}>
-                 {label}
-                 <select name={field.id} value={field.value} onChange={() => this.onFieldChange(field.id, event)}>
-                   {options}
-                 </select>
-                 {field.isRequired && <span className="isRequired">*</span>}
-               </div>
-             );
              break;
            default:
              return (
                <div className="formRow" key={`${field.id}`}>
                  {label}
                  <span>Can't render this field</span>
-                </div>);
+                </div>
+             );
           }
         } else {
           return (
@@ -166,9 +177,11 @@ class App extends React.Component {
     // fetch useful data
     let fields = [];
     let formName = data.observationName;
-    data.dataElements.forEach(element => {
-      fields.push({...element, value: '', error: ''});
-    });
+    if (data.dataElements && Array.isArray(data.dataElements)) {
+      data.dataElements.forEach(element => {
+        fields.push({...element, value: '', error: ''});
+      });
+    }
     this.setState({fields, formName});
   }
 
