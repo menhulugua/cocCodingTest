@@ -69,7 +69,7 @@ class App extends React.Component {
     });
 
     if (this.state.type === 1) {
-      if (!heightField.error && !weightField.error && heightField.value && weightField.value) {
+      if (!heightField.error && !weightField.error && heightField.value > 0 && weightField.value) {
         bmiField.value = Number((weightField.value / (heightField.value / 100) ** 2).toFixed(2));
         bmiField.error = '';
         if (bmiField.value > bmiField.bounds.upperLimit)
