@@ -10,7 +10,7 @@ class App extends React.Component {
 
     // check if ready to submit
     let requiredFields = this.state.fields.filter(field => field.isRequired);
-    let errorField = requiredFields.filter(field => field.error);
+    let errorField = this.state.fields.filter(field => field.error);
     let emptyField = requiredFields.filter(field => !field.value);
     if (errorField.length) {
       this.setState({error: 'There are validation errors'});
